@@ -191,49 +191,55 @@ describe("whitelist-transfer-hook", () => {
     console.log('Transaction Signature:', initializeExtraAccountMetaListInstruction);
   });
 
-  //   it('Transfer Hook with Extra Account Meta', async () => {
-  //     // 1 tokens
-  //     const amount = 1 * 10 ** 9;
-  //     const amountBigInt = BigInt(amount);
 
-  //     // Create the base transfer instruction
-  //     const transferInstruction = createTransferCheckedInstruction(
-  //       sourceTokenAccount,
-  //       mint2022.publicKey,
-  //       destinationTokenAccount,
-  //       wallet.publicKey,
-  //       amountBigInt,
-  //       9,
-  //       [],
-  //       TOKEN_2022_PROGRAM_ID,
-  //     );
+  it('Transfer Hook with Extra Account Meta', async () => {
+    // 1 tokens
+    const amount = 1 * 10 ** 9;
+    const amountBigInt = BigInt(amount);
 
-  //     // Manually add the extra accounts required by the transfer hook
-  //     // These accounts are needed for the CPI to our transfer hook program
-  //     transferInstruction.keys.push(
-  //       // ExtraAccountMetaList PDA
-  //       { pubkey: extraAccountMetaListPDA, isSigner: false, isWritable: false },
-  //       // Whitelist PDA (the extra account we defined)
-  //       { pubkey: whitelist, isSigner: false, isWritable: false },
-  //       // Transfer hook program
-  //       { pubkey: program.programId, isSigner: false, isWritable: false },
-  //     );
+    // Create the base transfer instruction
+    const transferInstructionWithHelper =
+      await createTransferCheckedWithTransferHookInstruction(
+        provider.connection,
+        sourceTokenAccount,
+        mint2022.publicKey,
+        destinationTokenAccount,
+        wallet.publicKey,
+        amountBigInt,
+        9,
+        [],
+        "confirmed",
+        TOKEN_2022_PROGRAM_ID
+      );
 
-  //     const transaction = new Transaction().add(transferInstruction);
+    // Manually add the extra accounts required by the transfer hook
+    // These accounts are needed for the CPI to our transfer hook program
+    // transferInstruction.keys.push(
+    //   // ExtraAccountMetaList PDA
+    //   { pubkey: extraAccountMetaListPDA, isSigner: false, isWritable: false },
+    //   // Whitelist PDA (the extra account we defined)
+    //   { pubkey: whitelist, isSigner: false, isWritable: false },
+    //   // Transfer hook program
+    //   { pubkey: program.programId, isSigner: false, isWritable: false },
+    // );
 
-  //     try {
-  //       // Send the transaction
-  //       const txSig = await sendAndConfirmTransaction(provider.connection, transaction, [wallet.payer], { skipPreflight: false });
-  //       console.log("\nTransfer Signature:", txSig);
-  //     }
-  //     catch (error) {
-  //       if (error instanceof SendTransactionError) {
-  //         console.error("\nTransaction failed:", error.logs[6]);
-  //         // console.error("\nTransaction failed. Full logs:");
-  //         // error.logs?.forEach((log, i) => console.error(`  ${i}: ${log}`));
-  //       } else {
-  //         console.error("\nUnexpected error:", error);
-  //       }
-  //     }
-  //   });
+    const transaction = new Transaction().add(transferInstructionWithHelper);
+
+    try {
+      // Send the transaction
+      console.log("Expected hook program:", program.programId.toBase58());
+
+      const txSig = await sendAndConfirmTransaction(provider.connection, transaction, [wallet.payer], { skipPreflight: false });
+      console.log("\nTransfer Signature:", txSig);
+    }
+    catch (error) {
+      if (error instanceof SendTransactionError) {
+        console.error("\nTransaction failed:", error.logs[6], error.logs);
+        // console.error("\nTransaction failed. Full logs:");
+        // error.logs?.forEach((log, i) => console.error(`  ${i}: ${log}`));
+      } else {
+        console.error("\nUnexpected error:", error);
+      }
+    }
+  });
 });
